@@ -1,0 +1,15 @@
+version: '3.6'
+
+services:
+  ui:
+    image: portainer/portainer:1.23.2
+    ports:
+      - 9000:9000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - portainer-data:/data
+
+volumes:
+  portainer-data:
+    external: true
+    name: portainer-data

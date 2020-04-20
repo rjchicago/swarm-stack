@@ -1,0 +1,26 @@
+version: "3.6"
+
+services:
+  
+  docker:
+    image: docker.elastic.co/beats/filebeat:7.6.0
+    networks:
+      - elastic-net
+    environment:
+      DOCKER_NODE_HOSTNAME: "localhost"
+      HOSTNAME_PATTERN: "test.localhost"
+      ENV: "${ENV:-local}"
+      ES_HOSTS: "[\"search:9200\"]"
+      ES_USER: "elastic"
+      ES_PASSWORD: "test"
+      INDEX_PREFIX: "gui_filebeat_docker_${ENV:-local}"
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - /var/lib/docker/containers:/var/lib/docker/containers:cached
+      - ./config/filebeat-docker.dev.yml:/usr/share/filebeat/filebeat.yml:cached
+
+networks:
+  elastic-net:
+    external: true
+    name: elastic-net

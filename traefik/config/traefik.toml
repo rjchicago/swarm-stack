@@ -1,0 +1,15 @@
+[docker]
+watch = true
+swarmmode = true
+
+[api]
+dashboard = true
+
+[accessLog]
+filePath = "/var/log/traefik-access.log.json"
+format = "json"
+
+[api.statistics]
+    recentErrors = 100
+
+[ping]

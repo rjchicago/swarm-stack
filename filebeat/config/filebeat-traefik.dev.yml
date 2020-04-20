@@ -1,0 +1,34 @@
+name: "${DOCKER_NODE_HOSTNAME}"
+fields:
+  env: "${ENV}"
+  hostname: "${DOCKER_NODE_HOSTNAME}"
+  hostname_pattern: "${HOSTNAME_PATTERN}"
+fields_under_root: true
+logging.level: warning
+filebeat.inputs:
+- type: log
+  paths:
+   - /var/log/traefik-access.log.json
+  ignore_older: 3m
+  json.keys_under_root: true
+  json.add_error_key: true
+  fields_under_root: true
+  processors:
+    - drop_event:
+        when:
+          regexp:
+            RequestPath: '.*/health'
+
+output.elasticsearch:
+  hosts: ${ES_HOSTS}
+  index: "${INDEX_PREFIX}%{+yyyy.MM}"
+  username: "${ES_USER}"
+  password: "${ES_PASSWORD}"
+
+setup.template.name: "${INDEX_PREFIX}"
+setup.template.pattern: "${INDEX_PREFIX}*"
+
+# required for ES 7
+setup.ilm.enabled: auto
+setup.ilm.rollover_alias: "${INDEX_PREFIX}"
+setup.ilm.pattern: "{now/d}-000001"

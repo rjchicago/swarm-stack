@@ -1,0 +1,43 @@
+version: "3.6"
+
+services:
+
+  search:
+    networks:
+      - traefik-net-admin
+    volumes:
+      - filebeat-search-data:/usr/share/elasticsearch/data
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 20s
+        order: start-first
+      labels:
+        - traefik.frontend.rule=Host:search.localhost
+        - traefik.docker.network=traefik-net-admin
+        - traefik.port=9200
+
+  kibana:
+    networks:
+      - traefik-net-admin
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 20s
+        order: start-first
+      labels:
+        - traefik.frontend.rule=Host:kibana.localhost
+        - traefik.docker.network=traefik-net-admin
+        - traefik.port=5601
+
+volumes:
+  filebeat-search-data:
+    external: true
+    name: filebeat-search-data
+
+networks:
+  traefik-net-admin:
+    external: true
+    name: traefik-net-admin

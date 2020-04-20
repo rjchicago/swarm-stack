@@ -1,0 +1,25 @@
+version: '3.6'
+
+services:
+  ui:
+    networks:
+      - traefik-net-admin
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 20s
+        order: start-first
+      labels:
+        - traefik.frontend.rule=Host:portainer.localhost
+        - traefik.backend.loadbalancer.stickiness=true
+        - traefik.docker.network=traefik-net-admin
+        - traefik.port=9000
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  traefik-net-admin:
+    external: true
+    name: traefik-net-admin

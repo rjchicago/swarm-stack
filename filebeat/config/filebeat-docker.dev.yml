@@ -1,0 +1,51 @@
+name: "${DOCKER_NODE_HOSTNAME}"
+fields:
+  env: "${ENV}"
+  hostname: "${DOCKER_NODE_HOSTNAME}"
+  hostname_pattern: "${HOSTNAME_PATTERN}"
+fields_under_root: true
+logging.level: warning
+filebeat.inputs:
+- type: container
+  paths:
+   - '/var/lib/docker/containers/*/*.log'
+  
+  ignore_older: 15m
+
+  multiline.pattern: '^[[:space:]]+'
+  multiline.negate: false
+  multiline.match:  after
+
+  # not working with ES7
+  # json.message_key: log
+  # json.keys_under_root: true
+
+  processors:
+  - add_docker_metadata: ~
+  - drop_event:
+      when:
+        or:
+          - regexp:
+              docker.container.labels.com.docker.swarm.service.name: '.*load_balancer.*'
+          - regexp:
+              docker.container.labels.com.docker.swarm.service.name: '.*filebeat.*'
+          - regexp:
+              message: '^\s*$'
+  - decode_json_fields:
+      fields: ["log"]
+      target: ""
+      overwrite_keys: true
+
+output.elasticsearch:
+  hosts: ${ES_HOSTS}
+  index: "${INDEX_PREFIX}%{+yyyy.MM}"
+  username: "${ES_USER}"
+  password: "${ES_PASSWORD}"
+
+setup.template.name: "${INDEX_PREFIX}"
+setup.template.pattern: "${INDEX_PREFIX}*"
+
+# required for ES 7
+setup.ilm.enabled: auto
+setup.ilm.rollover_alias: "${INDEX_PREFIX}"
+setup.ilm.pattern: "{now/d}-000001"

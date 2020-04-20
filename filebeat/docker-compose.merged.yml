@@ -1,0 +1,58 @@
+version: "3.6"
+
+services:
+
+  docker:
+    deploy:
+      mode: global
+    environment:
+      DOCKER_NODE_HOSTNAME: localhost
+      ENV: local
+      ES_HOSTS: '["search:9200"]'
+      ES_PASSWORD: test
+      ES_USER: elastic
+      HOSTNAME_PATTERN: test.localhost
+      INDEX_PREFIX: gui_filebeat_docker_local
+    image: docker.elastic.co/beats/filebeat:7.6.0
+    networks:
+      - elastic-net
+    user: root
+    volumes:
+    - ./config/filebeat-docker.dev.yml:/usr/share/filebeat/filebeat.yml:cached
+    - /var/lib/docker/containers:/var/lib/docker/containers:cached
+    - /var/run/docker.sock:/var/run/docker.sock:cached
+
+  traefik:
+    deploy:
+      mode: global
+      placement:
+        constraints:
+        - node.role == manager
+    environment:
+      DOCKER_NODE_HOSTNAME: '{{.Node.Hostname}}'
+      ENV: local
+      ES_HOSTS: '["search:9200"]'
+      ES_PASSWORD: test
+      ES_USER: elastic
+      HOSTNAME_PATTERN: test.localhost
+      INDEX_PREFIX: gui_filebeat_traefik_local
+    image: docker.elastic.co/beats/filebeat:7.6.0
+    networks:
+      - elastic-net
+    user: root
+    volumes:
+    - ./config/filebeat-traefik.dev.yml:/usr/share/filebeat/filebeat.yml:cached
+    - traefik-logs:/var/log:rw
+
+volumes:
+  filebeat-search-data:
+    external: true
+    name: filebeat-search-data
+  traefik-logs:
+    external: true
+    name: traefik-logs
+
+networks:
+  elastic-net:
+    external: true
+    name: elastic-net

@@ -1,0 +1,58 @@
+version: "3.6"
+
+services:
+  traefik:
+    image: traefik:1.7.18
+    ports:
+      - 80:80
+      - 8080:8080
+    networks:
+      - traefik-net
+      - traefik-net-admin
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/traefik.toml:/etc/traefik/traefik.toml
+      - traefik-logs:/var/log
+    deploy:
+      mode: global
+      update_config:
+          delay: 20s
+          order: start-first
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+       - traefik.traefik-localhost.frontend.rule=Host:traefik.localhost
+       - traefik.traefik-ping.frontend.rule=PathPrefix:/traefik/ping;PathPrefixStrip:/traefik
+       - traefik.docker.network=traefik-net-admin # running on traefik-net-admin
+       - traefik.port=8080
+  logrotate:
+    image: logrotate:1.0.0
+    build:
+      context: ./logrotate
+    environment:
+      LOG_DIRECTORIES: /var/log/*.log /var/log/*.json
+      LOGROTATE_COPIES: rotate 0
+      LOGROTATE_MODE: copytruncate
+      LOGROTATE_PARAMETERS: -vf
+      LOGROTATE_CRONSCHEDULE: '*/5 * * * *'
+    volumes:
+      - traefik-logs:/var/log
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == manager
+
+volumes:
+  traefik-logs:
+    external: true
+    name: traefik-logs
+
+networks:
+  traefik-net:
+    external: true
+    name: traefik-net
+  traefik-net-admin:
+    external: true
+    name: traefik-net-admin
